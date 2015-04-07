@@ -1,0 +1,327 @@
+////////////////////////
+// Mixins
+////////////////////////
+
+/**
+ * @file allyou/scss/global/_mixins.scss
+ * \file allyou/scss/global/_mixins.scss
+ * \ingroup AllYou_SCSS_Global
+ * \brief Mixins and functions
+ */
+
+// Remove Bullets
+// Remove list item styles
+//
+// Ex:
+//   .selector {
+//     @include remove-bullets;
+//   }
+//
+@mixin remove-bullets {
+  list-style: none;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    list-style: none;
+    list-style-type: none;
+    line-height: inherit;
+    padding: 0;
+  }
+
+}
+
+// Element Invisible
+// Hide an element from view while staying accessible.
+//
+// Ex:
+//   .selector {
+//     @include element-invisible;
+//   }
+//
+@mixin element-invisible {
+  position: absolute !important;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  @if $legacy-support-for-ie6 or $legacy-support-for-ie7 {
+    clip: rect(1px 1px 1px 1px); // IE6 and IE7 use the wrong syntax.
+  }
+  clip: rect(1px, 1px, 1px, 1px);
+}
+
+// Element Invisible Off
+// Unhide an element that was previously hidden by 'Element Invisible'
+//
+// Ex:
+//   .selector--active {
+//     @include element-invisible-off;
+//   }
+@mixin element-invisible-off {
+  position: static !important;
+  clip: auto;
+  height: auto;
+  width: auto;
+  overflow: auto;
+}
+
+// Font-Face
+// Add @font-face snippets easily
+//
+// Params:
+//   $family        - The font-family name
+//   $file          - Optional file name if different from font-family
+//
+// Ex:
+//   @include font-face('Fontname regular', $file: 'fontname', $path: 'alt-font/')
+//
+@mixin font-face($family, $file: false, $path: false) {
+  $full-path: null;
+  @if $file == false {
+    $file: $family;
+  }
+  @if $path == false {
+    $path: $family;
+    $full-path: "#{$path}/";
+  } @else {
+    $full-path: $path;
+  }
+  @font-face {
+    font-family: '#{$family}';
+    src: font-url('#{$full-path}#{$file}.eot');
+    src: font-url('#{$full-path}#{$file}.eot?#iefix') format('embedded-opentype'),
+    font-url('#{$full-path}#{$file}.woff') format('woff'),
+    font-url('#{$full-path}#{$file}.ttf') format('truetype'),
+    font-url('#{$full-path}#{$file}.svg##{$family}') format('svg');
+    font-weight: normal;
+    font-style: normal;
+  }
+}
+// REM
+// Output a given style rule containing rem values along with an (optional)
+// fallback rule for older browsers (with rem values converted to px).
+//
+// Params:
+//   $property        - The css property name.
+//   $px-values       - The value (or space-separated list of values) for the property.
+//   $use-px-fallback - [ true | false ]
+//
+@mixin rem($property, $values, $use-px-fallback: $rem-with-px-fallback) {
+  // Create a couple of empty lists as output buffers.
+  $px-values: ();
+  $rem-values: ();
+
+  // Loop through the $values list
+  @each $value in $values {
+    // For each property value, if it's in rem or px, derive both rem and
+    // px values for it and add those to the end of the appropriate buffer.
+    // Ensure all pixel values are rounded to the nearest pixel.
+    @if type-of($value) == number and not unitless($value) and (unit($value) == px or unit($value) == rem) {
+      @if unit($value) == px {
+        $px-values: join($px-values, round($value));
+        $rem-values: join($rem-values, convert-length($value, rem));
+      }
+      @else {
+        $px-values: join($px-values, round(convert-length($value, px)));
+        $rem-values: join($rem-values, $value);
+      }
+    }
+    @else {
+      $px-values: join($px-values, $value);
+      $rem-values: join($rem-values, $value);
+    }
+  }
+
+  // Use pixel fallback for browsers that don't understand rem units.
+  @if $use-px-fallback {
+    #{$property}: $px-values;
+  }
+
+  // Use rem values for everyone else (overrides pixel values).
+  #{$property}: $rem-values;
+}
+
+// EM Convertor
+// Convert px to em
+//
+//   $target     - The value in px.
+//   $context    - The base line height.
+//
+@function em($target, $context: $base-font-size) {
+  @return ($target / $context) * 1em;
+}
+
+// % Convertor
+// Convert px to %
+//
+//   $target     - The value in px.
+//   $context    - The context to calculate with.
+//
+@function percentage($target, $context) {
+  @return ($target / $context) * 100%;
+}
+
+// Retina Wrapper
+// Wrap anything in a retina query
+//
+// Params:
+//   $background-size - Optional value to set background size
+//
+@mixin retina-wrapper($background-size: 16px) {
+  @media only screen and (-webkit-min-device-pixel-ratio: 2),
+  only screen and (min--moz-device-pixel-ratio: 2),
+  only screen and (-o-min-device-pixel-ratio: 2 / 1),
+  only screen and (min-device-pixel-ratio: 2),
+  only screen and (min-resolution: 192dpi),
+  only screen and (min-resolution: 2dppx) {
+    @content;
+    @if $background-size {
+      @include background-size($background-size);
+    }
+  }
+}
+
+// No Mobile
+// Used to hide a component on the mobile breakpoint
+//
+// Params:
+//   $non-mobile-display: Optional, 'display' value from tablet on up.
+//
+@mixin no-mobile($non-mobile-display: block) {
+  display: none;
+  @include respond-to(tablet) {
+    display: $non-mobile-display;
+  }
+}
+
+// Mobile Only
+// The exact opposite of No Mobile
+//
+// Params:
+//   $mobile-display: Optional, 'display' value for mobile.
+//
+@mixin mobile-only($mobile-display: block) {
+  display: $mobile-display;
+  @include respond-to(tablet) {
+    display: none;
+  }
+}
+
+// Gutter
+// Padding or margin offsets based on grid gutter by default
+//
+// Params:
+//   $gutter-width: Either pixel amount or 'full' or 'half' based on $zen-gutter-width
+//   $spacing-type: Optional,margin or padding, defaults to padding
+//   $gutter-side: Optional, left, right or both, defaults to both.
+//   $offset: Optional, push or pull, defaults to push
+@mixin gutter (
+$gutter-width     : $zen-gutter-width,
+$spacing-type     : 'padding',
+$gutter-side      : 'both',
+$offset           : 'push') {
+  $width : $zen-gutter-width;
+  $dir : $gutter-side;
+
+  @if $gutter-width == 'half' {
+    $width : zen-half-gutter();
+  } @elseif $gutter-width == 'full' {
+    $width : $zen-gutter-width
+  } @else {
+    $width : $gutter-width;
+  }
+
+  @if $offset == 'pull' {
+    $width : -#{$width};
+  }
+
+  @if $dir == 'both' {
+    #{$spacing-type}-left: $width;
+    #{$spacing-type}-right: $width;
+  } @else {
+    #{$spacing-type}-#{$dir}: $width;
+  }
+
+}
+
+@mixin centerer($horizontal: true, $vertical: true) {
+  position: absolute;
+  @if ($horizontal and $vertical) {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  } @else if ($horizontal) {
+    left: 50%;
+    transform: translate(-50%, 0);
+  } @else if ($vertical) {
+    top: 50%;
+    transform: translate(0, -50);
+  }
+}
+
+@mixin vertical-align {
+  position: relative;
+  top: 50%;
+  -webkit-transform: translateY(-50%);
+  -ms-transform: translateY(-50%);
+  transform: translateY(-50%);
+}
+
+// Generic button style
+@mixin button($background-color: $light-blue, $color: white, $padding: 20px 25px, $display: inline-block, $background-color-hover: black) {
+  display: $display;
+  padding: $padding;
+  color: $color;
+  cursor: pointer;
+  background-color: $background-color;
+  text-decoration: none;
+  text-transform: uppercase;
+  text-align: center;
+  font: 700 0.875rem $roboto-condensed;
+  white-space: nowrap;
+
+  &:hover {
+    background-color: $background-color-hover;
+  }
+}
+
+// Css arrows
+@mixin arrow($direction: "up", $size: 48px, $color: black) {
+  display: inline-block;
+  position: relative;
+  width: $size;
+  height: $size;
+
+  &:after {
+    @include rotate(45deg);
+    position: absolute;
+    content: " ";
+    width: $size / 3;
+    height: $size / 3;
+    border-color: $color;
+    border-style: solid;
+
+    @if $direction == "up" {
+      top: $size / 2.5;
+      left: $size / 3;
+      border-width: 3px 0 0 3px;
+    } @else if $direction == "right" {
+      position: absolute;
+      top: $size / 3;
+      left: $size / 4;
+      border-width: 3px 3px 0 0;
+    } @else if $direction == "down" {
+      position: absolute;
+      top: $size / 4;
+      left: $size / 3;
+      border-width: 0 3px 3px 0;
+    } @else if $direction == "left" {
+      position: absolute;
+      top: $size / 3;
+      left: $size / 2.5;
+      border-width: 0 0 3px 3px;
+    }
+  }
+}
+
